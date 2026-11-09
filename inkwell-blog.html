@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inkwell</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{bg:'var(--bg)',card:'var(--card)',ink:'var(--ink)',mute:'var(--mute)',line:'var(--line)',brand:'var(--brand)',onbrand:'var(--onbrand)',soft:'var(--soft)',err:'var(--err)'},fontFamily:{sans:['Inter','system-ui','sans-serif'],serif:['Newsreader','Georgia','serif']}}}}
+</script>
+<style>
+:root{--bg:#f6f7f5;--card:#fff;--ink:#13201c;--mute:#55655f;--line:#dde4e0;--brand:#0d6b5a;--onbrand:#fff;--soft:#e3f1ec;--err:#b42318;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1412;--card:#141d1a;--ink:#e8efec;--mute:#9fb0aa;--line:#26332f;--brand:#4fd1b5;--onbrand:#07201a;--soft:#173029;--err:#ff8f85;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0d1412;--card:#141d1a;--ink:#e8efec;--mute:#9fb0aa;--line:#26332f;--brand:#4fd1b5;--onbrand:#07201a;--soft:#173029;--err:#ff8f85;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:30}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style type="text/tailwindcss">
+@layer components{
+.btn{@apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-60}
+.btn-p{@apply bg-brand text-onbrand hover:opacity-90}
+.btn-s{@apply border border-line bg-card text-ink hover:bg-soft}
+.inp{@apply w-full rounded-md border border-line bg-card px-3 py-2.5 text-sm text-ink placeholder:text-mute}
+.card{@apply rounded-xl border border-line bg-card}
+}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+<header class="sticky z-20 bg-card border-b border-line" style="top:env(safe-area-inset-top,0px)">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+    <a href="#home" class="flex items-center gap-2 font-serif text-xl font-semibold"><span class="grid place-items-center h-8 w-8 rounded-lg bg-brand text-onbrand text-base">I</span>Inkwell</a>
+    <nav id="dn" class="hidden md:flex items-center gap-1" aria-label="Main"></nav>
+    <button data-menu class="md:hidden btn btn-s" aria-expanded="false" aria-controls="mm">Menu</button>
+  </div>
+  <nav id="mm" class="hidden md:hidden border-t border-line px-4 py-3 flex-col gap-1" aria-label="Mobile"></nav>
+</header>
+<main id="app" class="flex-1"></main>
+<footer class="border-t border-line text-sm text-mute"><div class="max-w-6xl mx-auto px-4 py-6">© 2026 Inkwell. Write something worth reading.</div></footer>
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 z-40 flex flex-col gap-2 items-center" style="bottom:calc(env(safe-area-inset-bottom,0px) + 1rem)" aria-live="polite"></div>
+<dialog id="dlg" class="rounded-xl bg-card text-ink p-0 w-[min(42rem,92vw)] max-h-[85vh] overflow-y-auto"><div id="dlgc" class="p-6 sm:p-8"></div></dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('ink:'+k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem('ink:'+k,JSON.stringify(v))}catch{}}};
+const CATS=['Engineering','Design','Product','Career'];
+const SH='Good writing starts with one reader in mind. Decide who they are, what they already know, and what you want them to do after the last line.\n\nCut the first paragraph, then see whether the post still works. Most of the time it does, and it gets better.';
+const mk=(i,title,cat,author,by,date,views,status,ex)=>({id:'s'+i,title,cat,author,by,date,views,status,excerpt:ex,body:ex+'\n\n'+SH});
+const D='demo@inkwell.dev',E='team@inkwell.dev';
+const seed=[
+mk(1,'Designing APIs your future self will thank you for','Engineering','Priya Raman',E,'2026-10-30',1840,'published','Consistent naming, predictable errors and versioning from day one save more time than any framework choice.'),
+mk(2,'A field guide to spacing in interfaces','Design','Tomás Duarte',E,'2026-10-24',1260,'published','Most layouts feel off because spacing has no system. Pick a base unit, then let every gap be a multiple of it.'),
+mk(3,'Writing a product brief people actually read','Product','Hannah Lee',E,'2026-10-18',980,'published','One page, one decision, one owner. Here is the structure our team settled on after dozens of rewrites.'),
+mk(4,'Your first year as a junior developer','Career','Samir Okafor',E,'2026-10-09',2410,'published','Ask earlier, read the tests, and keep a log of what you learned each week. The log pays off at review time.'),
+mk(5,'Why we moved our forms to server validation','Engineering','Demo Writer',D,'2026-11-02',310,'published','Client checks make forms feel fast, but only the server can be trusted. This is how we split the work.'),
+mk(6,'Picking a color palette without a brand guide','Design','Demo Writer',D,'2026-10-27',540,'published','Start with one accent, two neutrals and a single error color. Test contrast before you fall in love with any of them.'),
+mk(7,'Notes on a quieter standup','Product','Demo Writer',D,'2026-11-03',0,'draft','Draft: what changed when we moved status updates to writing and kept the meeting for blockers only.')];
+let S={posts:store.get('posts',null)||seed,users:store.get('users',[]),me:store.get('me',null)};
+let q='',cat='All',editId=null,next=null;
+const save=()=>{store.set('posts',S.posts);store.set('users',S.users);store.set('me',S.me)};
+const fmt=d=>new Date(d+'T00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+const words=t=>(t.trim().match(/\S+/g)||[]).length;
+const rt=t=>Math.max(1,Math.round(words(t)/200));
+const cover=t=>{const h=[...t].reduce((a,c)=>a+c.charCodeAt(0),0)%360;return `background:linear-gradient(135deg,hsl(${h} 55% 42%),hsl(${(h+45)%360} 60% 28%))`};
+const hash=async s=>{try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch{return btoa(s)}};
+const emailOk=e=>/^\S+@\S+\.\S+$/.test(e);
+
+function toast(m){const t=document.createElement('div');t.className='rounded-md bg-ink text-bg text-sm px-4 py-2.5 shadow-lg';t.textContent=m;$('#toast').append(t);setTimeout(()=>t.remove(),2800)}
+const err=(f,id,m)=>{const e=f.querySelector(`[data-e="${id}"]`);e.textContent=m;e.classList.toggle('hidden',!m);f.elements[id].setAttribute('aria-invalid',!!m)};
+const busy=(f,b)=>{const s=f.querySelector('[type=submit]');s.disabled=b;s.textContent=b?'Please wait…':s.dataset.label};
+const field=(id,label,type='text',ph='',ac='')=>`<div><label for="${id}" class="block text-sm font-medium mb-1.5">${label}</label><div class="relative"><input id="${id}" name="${id}" type="${type}" placeholder="${ph}" autocomplete="${ac}" class="inp ${type==='password'?'pr-16':''}">${type==='password'?`<button type="button" data-toggle="${id}" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-brand px-2 py-1">Show</button>`:''}</div><p data-e="${id}" class="hidden text-sm text-err mt-1.5" role="alert"></p></div>`;
+
+/* ---------- Views ---------- */
+const card=p=>`<article class="card overflow-hidden flex"><button data-read="${p.id}" class="text-left flex-1 flex flex-col w-full"><div class="h-36 flex items-end p-4" style="${cover(p.title)}"><span class="text-xs font-medium bg-card text-ink rounded-full px-2.5 py-1">${esc(p.cat)}</span></div><div class="p-5 flex-1 flex flex-col"><h3 class="font-serif text-xl font-semibold leading-snug">${esc(p.title)}</h3><p class="mt-2 text-sm text-mute line-clamp-3">${esc(p.excerpt)}</p><div class="mt-auto pt-4 flex flex-wrap gap-x-3 text-xs text-mute"><span>${esc(p.author)}</span><span>${fmt(p.date)}</span><span>${rt(p.body)} min read</span></div></div></button></article>`;
+
+function home(){return `<section class="max-w-6xl mx-auto px-4 pt-10 pb-6"><h1 class="font-serif text-4xl sm:text-5xl font-semibold max-w-2xl leading-tight">Practical writing from people who build things.</h1><p class="mt-3 text-mute max-w-xl">Notes on engineering, design and product from our community of working writers.</p><div class="mt-6 max-w-md"><label for="q" class="sr-only">Search posts</label><input id="q" type="search" placeholder="Search posts, topics or authors" class="inp" value="${esc(q)}"></div><div id="chips" class="mt-4 flex flex-wrap gap-2"></div></section><section id="grid" class="max-w-6xl mx-auto px-4 pb-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></section>`}
+function grid(){const l=S.posts.filter(p=>p.status==='published'&&(cat==='All'||p.cat===cat)&&(p.title+p.excerpt+p.author).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
+$('#grid').innerHTML=l.length?l.map(card).join(''):`<div class="col-span-full card p-10 text-center"><p class="font-medium">No posts match your search</p><p class="text-sm text-mute mt-1">Try a different keyword or choose another category.</p></div>`;
+$('#chips').innerHTML=['All',...CATS].map(c=>`<button data-cat="${c}" aria-pressed="${c===cat}" class="rounded-full border px-3.5 py-1.5 text-sm ${c===cat?'bg-brand text-onbrand border-brand':'border-line text-mute hover:text-ink'}">${c}</button>`).join('')}
+function read(id){const p=S.posts.find(x=>x.id===id);if(!p)return;p.views++;save();
+$('#dlgc').innerHTML=`<div class="flex justify-between items-start gap-4"><span class="text-xs font-medium bg-soft text-brand rounded-full px-2.5 py-1">${esc(p.cat)}</span><button data-close class="btn btn-s !py-1.5">Close</button></div><h2 class="font-serif text-3xl font-semibold leading-tight mt-4">${esc(p.title)}</h2><div class="mt-3 flex flex-wrap gap-x-3 text-sm text-mute"><span>${esc(p.author)}</span><span>${fmt(p.date)}</span><span>${rt(p.body)} min read</span></div><div class="mt-6 space-y-4 font-serif text-[1.075rem] leading-8">${p.body.split(/\n{2,}/).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;$('#dlg').showModal()}
+
+const authCard=(t,sub,body,foot)=>`<section class="px-4 py-12"><div class="card max-w-md mx-auto p-6 sm:p-8"><h1 class="font-serif text-3xl font-semibold">${t}</h1><p class="text-sm text-mute mt-1">${sub}</p>${body}<p class="mt-6 text-sm text-mute text-center">${foot}</p></div></section>`;
+const login=()=>authCard('Log in','Pick up where you left off.',`<form id="login" class="mt-6 space-y-4" novalidate>${field('email','Email','email','you@example.com','email')}${field('password','Password','password','','current-password')}<button type="submit" data-label="Log in" class="btn btn-p w-full">Log in</button></form><button data-demo class="btn btn-s w-full mt-3">Try the demo account</button>`,'New here? <a href="#register" class="text-brand font-medium underline">Create an account</a>');
+const register=()=>authCard('Create your account','Start writing in under a minute.',`<form id="register" class="mt-6 space-y-4" novalidate>${field('fullname','Full name','text','Ada Lovelace','name')}${field('email','Email','email','you@example.com','email')}${field('password','Password','password','At least 8 characters, with a number','new-password')}${field('confirm','Confirm password','password','','new-password')}<button type="submit" data-label="Create account" class="btn btn-p w-full">Create account</button></form>`,'Already registered? <a href="#login" class="text-brand font-medium underline">Log in</a>');
+
+function dashboard(){const m=S.posts.filter(p=>p.by===S.me.email).sort((a,b)=>b.date.localeCompare(a.date));const pub=m.filter(p=>p.status==='published').length;
+const st=[['Total posts',m.length],['Published',pub],['Drafts',m.length-pub],['Total views',m.reduce((a,p)=>a+p.views,0).toLocaleString()]];
+const row=p=>`<div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_6.5rem_6rem_6.5rem_10rem] sm:items-center px-5 py-4 border-t border-line first:border-0"><div class="min-w-0"><p class="font-medium truncate">${esc(p.title)}</p><p class="text-xs text-mute">${esc(p.cat)}</p></div><div><span class="text-xs font-medium rounded-full px-2.5 py-1 ${p.status==='published'?'bg-soft text-brand':'border border-line text-mute'}">${p.status==='published'?'Published':'Draft'}</span></div><p class="text-sm text-mute">${p.views.toLocaleString()} views</p><p class="text-sm text-mute">${fmt(p.date)}</p><div class="flex gap-2 sm:justify-end"><button data-edit="${p.id}" class="btn btn-s !py-1.5">Edit</button><button data-del="${p.id}" class="btn btn-s !py-1.5">Delete</button></div></div>`;
+return `<section class="max-w-6xl mx-auto px-4 py-8"><div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="font-serif text-3xl font-semibold">Hello, ${esc(S.me.name.split(' ')[0])}</h1><p class="text-sm text-mute">Manage your posts and see how they’re doing.</p></div><a href="#create" data-new class="btn btn-p">New post</a></div>
+<div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">${st.map(([l,v])=>`<div class="card p-5"><p class="text-sm text-mute">${l}</p><p class="mt-1 text-3xl font-semibold">${v}</p></div>`).join('')}</div>
+<div class="card mt-6 overflow-hidden"><div class="hidden sm:grid grid-cols-[minmax(0,1fr)_6.5rem_6rem_6.5rem_10rem] px-5 py-3 text-sm text-mute bg-soft"><span>Title</span><span>Status</span><span>Views</span><span>Updated</span><span></span></div>${m.length?m.map(row).join(''):`<div class="p-10 text-center"><p class="font-medium">You haven’t written anything yet</p><p class="text-sm text-mute mt-1">Start with a draft. You can publish whenever it’s ready.</p><a href="#create" data-new class="btn btn-p mt-4">Write your first post</a></div>`}</div></section>`}
+
+function create(){const p=editId&&S.posts.find(x=>x.id===editId);
+return `<form id="post" class="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_18rem] gap-8 items-start" novalidate><div class="space-y-5"><h1 class="font-serif text-3xl font-semibold">${p?'Edit post':'New post'}</h1>
+<div><label for="title" class="block text-sm font-medium mb-1.5">Title</label><input id="title" name="title" class="inp !text-lg font-medium" placeholder="A clear, specific headline" value="${esc(p?.title)}"><p data-e="title" class="hidden text-sm text-err mt-1.5" role="alert"></p></div>
+<div><label for="body" class="block text-sm font-medium mb-1.5">Content</label><textarea id="body" name="body" class="inp min-h-[22rem] font-serif !text-base leading-7" placeholder="Tell your story. Separate paragraphs with a blank line.">${esc(p?.body)}</textarea><div class="flex justify-between mt-1.5"><p data-e="body" class="hidden text-sm text-err" role="alert"></p><p id="wc" class="text-xs text-mute ml-auto"></p></div></div></div>
+<aside class="card p-5 space-y-4 lg:sticky lg:top-24"><div><label for="cat" class="block text-sm font-medium mb-1.5">Category</label><select id="cat" name="cat" class="inp">${CATS.map(c=>`<option ${p?.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+<div><label for="excerpt" class="block text-sm font-medium mb-1.5">Summary <span class="text-mute font-normal">(optional)</span></label><textarea id="excerpt" name="excerpt" maxlength="160" rows="3" class="inp" placeholder="Shown on the home page. We’ll use your opening if left blank.">${esc(p?.excerpt)}</textarea><p id="ec" class="text-xs text-mute mt-1 text-right"></p></div>
+<button type="submit" value="published" data-label="Publish" class="btn btn-p w-full">Publish</button><button type="submit" value="draft" data-label="Save draft" class="btn btn-s w-full">Save draft</button><a href="#dashboard" class="block text-center text-sm text-mute hover:text-ink">Cancel</a></aside></form>`}
+const counts=()=>{const b=$('#body');if(!b)return;$('#wc').textContent=`${words(b.value)} words, ${rt(b.value)} min read`;$('#ec').textContent=`${$('#excerpt').value.length}/160`};
+
+/* ---------- Router & nav ---------- */
+const routes={home,dashboard,login,register,create};
+const titles={home:'Home',dashboard:'Dashboard',login:'Log in',register:'Create account',create:'Create blog'};
+function nav(cur){const L=(h,t)=>`<a href="#${h}" class="px-3 py-2 rounded-md text-sm font-medium ${cur===h?'bg-soft text-brand':'text-mute hover:text-ink'}" ${cur===h?'aria-current="page"':''}>${t}</a>`;
+const it=S.me?L('home','Home')+L('dashboard','Dashboard')+L('create','Create blog')+`<button data-logout class="px-3 py-2 rounded-md text-sm font-medium text-mute hover:text-ink text-left">Log out</button>`:L('home','Home')+L('login','Log in')+`<a href="#register" class="btn btn-p md:ml-1">Sign up</a>`;
+$('#dn').innerHTML=it;$('#mm').innerHTML=it;$('#mm').classList.add('hidden');$('#mm').classList.remove('flex');$('[data-menu]').setAttribute('aria-expanded','false')}
+function route(){let r=location.hash.slice(1)||'home';if(!routes[r])r='home';
+if(['dashboard','create'].includes(r)&&!S.me){next=r;r='login';history.replaceState(null,'','#login')}
+if(['login','register'].includes(r)&&S.me){r='dashboard';history.replaceState(null,'','#dashboard')}
+if(r!=='create')editId=null;
+nav(r);$('#app').innerHTML=routes[r]();document.title=titles[r]+' | Inkwell';window.scrollTo(0,0);
+if(r==='home')grid();if(r==='create')counts()}
+addEventListener('hashchange',route);
+
+/* ---------- Actions ---------- */
+function signIn(u,msg){S.me={name:u.name,email:u.email};save();toast(msg||`Welcome back, ${u.name.split(' ')[0]}`);const t=next||'dashboard';next=null;location.hash='#'+t;route()}
+async function doLogin(f){const em=f.elements.email.value.trim().toLowerCase(),pw=f.elements.password.value;
+err(f,'email',emailOk(em)?'':'Enter a valid email address.');err(f,'password',pw?'':'Enter your password.');if(!emailOk(em)||!pw)return;
+busy(f,true);const u=S.users.find(x=>x.email===em);
+if(!u||u.h!==await hash(em+pw)){busy(f,false);return err(f,'password','Email or password is incorrect. Check both and try again.')}
+signIn(u)}
+async function doReg(f){const n=f.elements.fullname.value.trim(),em=f.elements.email.value.trim().toLowerCase(),pw=f.elements.password.value,cf=f.elements.confirm.value;
+const e1=n.length>=2?'':'Enter your full name.',e2=emailOk(em)?'':'Enter a valid email address.',e3=pw.length>=8&&/\d/.test(pw)?'':'Use at least 8 characters, including a number.',e4=cf===pw?'':'Passwords don’t match.';
+err(f,'fullname',e1);err(f,'email',e2);err(f,'password',e3);err(f,'confirm',e4);if(e1||e2||e3||e4)return;
+if(S.users.some(u=>u.email===em))return err(f,'email','An account with this email already exists. Log in instead.');
+busy(f,true);const u={name:n,email:em,h:await hash(em+pw)};S.users.push(u);signIn(u,'Account created. Welcome to Inkwell!')}
+function doPost(f,btn){const st=btn.value,t=f.elements.title.value.trim(),b=f.elements.body.value.trim(),ex=f.elements.excerpt.value.trim(),wc=words(b);
+const bad=st==='published'&&wc<50;err(f,'title',t.length>=5?'':'Add a title of at least 5 characters.');err(f,'body',bad?`Write at least 50 words to publish. You have ${wc}.`:'');if(t.length<5||bad)return;
+const data={title:t,body:b,cat:f.elements.cat.value,excerpt:ex||b.slice(0,140).trim()+(b.length>140?'…':''),status:st,date:new Date().toISOString().slice(0,10)};
+if(editId)Object.assign(S.posts.find(p=>p.id===editId),data);else S.posts.push({id:'p'+Date.now(),author:S.me.name,by:S.me.email,views:0,...data});
+save();toast(st==='published'?'Post published':'Draft saved');editId=null;location.hash='#dashboard';route()}
+
+document.addEventListener('submit',e=>{e.preventDefault();({login:doLogin,register:doReg,post:doPost})[e.target.id]?.(e.target,e.submitter)});
+document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;grid()}if(['body','excerpt'].includes(e.target.id))counts()});
+document.addEventListener('click',e=>{const t=e.target.closest('button,a');if(!t)return;const d=t.dataset;
+if(d.read)read(d.read);
+else if('close' in d)$('#dlg').close();
+else if(d.cat){cat=d.cat;grid()}
+else if(d.toggle){const i=$('#'+d.toggle),s=i.type==='password';i.type=s?'text':'password';t.textContent=s?'Hide':'Show'}
+else if('menu' in d){const m=$('#mm'),o=m.classList.contains('hidden');m.classList.toggle('hidden',!o);m.classList.toggle('flex',o);t.setAttribute('aria-expanded',o)}
+else if('logout' in d){S.me=null;save();toast('You’re logged out');location.hash='#home';route()}
+else if('demo' in d)signIn({name:'Demo Writer',email:D});
+else if(d.edit){editId=d.edit;location.hash='#create';route()}
+else if('new' in d)editId=null;
+else if(d.del){if(t.dataset.armed){S.posts=S.posts.filter(p=>p.id!==d.del);save();toast('Post deleted');route()}else{t.dataset.armed=1;t.textContent='Confirm delete';setTimeout(()=>{t.dataset.armed='';t.textContent='Delete'},3000)}}});
+$('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg')e.target.close()});
+route();
+</script>
+</body>
+</html>
