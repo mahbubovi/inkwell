@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{--bg:#f6f7f5;--card:#fff;--ink:#13201c;--mute:#55655f;--line:#dde4e0;--brand:#0d6b5a;--onbrand:#fff;--soft:#e3f1ec;--err:#b42318;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1412;--card:#141d1a;--ink:#e8efec;--mute:#9fb0aa;--line:#26332f;--brand:#4fd1b5;--onbrand:#07201a;--soft:#173029;--err:#ff8f85;color-scheme:dark}}
+
+@layer base{
+  body{@apply bg-bg text-ink font-sans antialiased}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+}
+@layer components{
+  .btn{@apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-60}
+  .btn-p{@apply bg-brand text-onbrand hover:opacity-90}
+  .btn-s{@apply border border-line bg-card text-ink hover:bg-soft}
+  .inp{@apply w-full rounded-md border border-line bg-card px-3 py-2.5 text-sm text-ink placeholder:text-mute}
+  .card{@apply rounded-xl border border-line bg-card}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
