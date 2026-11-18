@@ -5,7 +5,8 @@ A responsive blog application. The frontend is built with React, React Router an
 ## Features
 - Register and log in with JWT authentication and bcrypt password hashing
 - Create, edit, delete and publish blog posts (drafts supported)
-- Public home feed with debounced search and category filters
+- Public home feed read from MongoDB, with debounced search, category filters and "Load more" pagination
+- A dedicated page for each blog (`/blog/:id`) with author, date, read time, view count, copy link and related posts
 - Dashboard with per-user stats
 - Protected routes, session restore on refresh, and automatic logout when a token expires
 - Validation on the client and the server, plus rate limiting, Helmet and CORS
@@ -24,14 +25,24 @@ inkwell/
     └── src/                     # config, models, controllers, routes, middleware
 ```
 
+## Get a MongoDB database
+Pick one, then put its connection string in `server/.env` as `MONGO_URI`.
+
+| Option | How | `MONGO_URI` |
+|---|---|---|
+| MongoDB Atlas (free, no install) | Create a free M0 cluster at mongodb.com/atlas, add a database user, allow your IP under Network Access, then copy the "Drivers" connection string | `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/inkwell` |
+| Local install | Install MongoDB Community Server (it runs as a service on port 27017) | `mongodb://127.0.0.1:27017/inkwell` |
+| Docker | `docker run -d --name mongo -p 27017:27017 -v mongo-data:/data/db mongo:7` | `mongodb://127.0.0.1:27017/inkwell` |
+
 ## Run it locally
-You need Node.js 18+ and MongoDB (local, or a free MongoDB Atlas cluster). Use two terminals.
+You need Node.js 18+ and a MongoDB database (see above). Use two terminals.
 
 **Terminal 1: API**
 ```bash
 cd server
 npm install
 cp .env.example .env      # set MONGO_URI and a long random JWT_SECRET
+npm run seed              # optional: 3 sample authors and 10 posts (password: secret123)
 npm run dev               # http://localhost:5000
 ```
 
@@ -54,6 +65,7 @@ To host the frontend separately (Vercel, Netlify), set `VITE_API_URL=https://you
 | Path | Access | Page |
 |---|---|---|
 | `/` | Public | Home feed |
+| `/blog/:id` | Public | Individual blog page |
 | `/login`, `/register` | Logged-out only | Auth forms |
 | `/dashboard` | Logged-in | Your posts and stats |
 | `/create`, `/edit/:id` | Logged-in | Create or edit a blog |
@@ -66,14 +78,26 @@ Base URL: `/api`. Protected routes need `Authorization: Bearer <token>`.
 | POST | `/auth/register` | No | Create an account, returns `{ user, token }` |
 | POST | `/auth/login` | No | Log in, returns `{ user, token }` |
 | GET | `/auth/me` | Yes | Current user |
-| GET | `/posts?q=&category=` | No | Published posts |
+| GET | `/posts?q=&category=&page=&limit=` | No | Published posts, paginated: `{ posts, total, page, pages }` |
 | GET | `/posts/mine` | Yes | Your posts, drafts included |
-| GET | `/posts/:id` | No | One published post (counts a view) |
+| GET | `/posts/:id` | No | One published post plus related posts (counts a view) |
 | POST | `/posts` | Yes | Create a blog post |
 | PUT | `/posts/:id` | Yes | Update your post |
 | DELETE | `/posts/:id` | Yes | Delete your post |
 
 Validation errors return `422` with `{ message, errors: { field: message } }`.
+
+## Database design (MongoDB + Mongoose)
+| Collection | Fields | Notes |
+|---|---|---|
+| `users` | `name`, `email` (unique), `password`, timestamps | Password is stored as a bcrypt hash (cost 12) and is excluded from queries by default (`select: false`) |
+| `posts` | `title`, `body`, `excerpt`, `category`, `status`, `views`, `readMinutes`, `author` (ref to `users`), timestamps | Index on `{ status, createdAt }` for the feed and on `author` for the dashboard; `author` is populated with the writer's name |
+
+How the data stays safe:
+- Plain-text passwords never reach the database or any API response
+- The JWT secret and database URL live in `.env`, which is git-ignored
+- Users can only edit or delete their own posts; the check is part of the database query
+- Every write is validated on the server before it touches the database
 
 ## Before going live
 - Keep the JWT in an httpOnly cookie instead of localStorage for stronger XSS protection

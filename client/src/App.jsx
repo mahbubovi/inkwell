@@ -4,6 +4,7 @@ import { ProtectedRoute, PublicOnly } from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PostDetail from './pages/PostDetail';
 import Dashboard from './pages/Dashboard';
 import CreatePost from './pages/CreatePost';
 import { useTitle } from './lib/utils';
@@ -26,6 +27,7 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/blog/:id" element={<PostDetail />} />
           <Route element={<PublicOnly />}>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import { coverStyle, fmtDate } from '../lib/utils';
 
-export default function PostCard({ post, onOpen }) {
+export default function PostCard({ post }) {
   return (
     <article className="card overflow-hidden flex">
-      <button onClick={() => onOpen(post.id)} className="text-left flex-1 flex flex-col w-full">
+      <Link to={`/blog/${post.id}`} className="flex-1 flex flex-col w-full">
         <div className="h-36 flex items-end p-4" style={coverStyle(post.title)}>
           <span className="text-xs font-medium bg-card text-ink rounded-full px-2.5 py-1">{post.category}</span>
         </div>
@@ -14,7 +15,7 @@ export default function PostCard({ post, onOpen }) {
             <span>{post.author}</span><span>{fmtDate(post.date)}</span><span>{post.mins} min read</span>
           </div>
         </div>
-      </button>
+      </Link>
     </article>
   );
 }

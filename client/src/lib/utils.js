@@ -15,7 +15,7 @@ export const coverStyle = (t) => {
 export const normalize = (p) => ({
   id: p._id, title: p.title, category: p.category, excerpt: p.excerpt, body: p.body || '',
   status: p.status, views: p.views, mins: p.readMinutes || 1,
-  author: p.author?.name || 'Unknown', date: p.updatedAt || p.createdAt,
+  author: p.author?.name || 'Unknown', authorId: p.author?.id || p.author?._id, date: p.updatedAt || p.createdAt,
 });
 
 export function useTitle(t) {

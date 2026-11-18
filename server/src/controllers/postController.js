@@ -4,17 +4,22 @@ const { CATEGORIES } = Post;
 const withAuthor = { path: 'author', select: 'name' };
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// GET /api/posts?q=&category=   (public, published only)
+// GET /api/posts?q=&category=&page=&limit=   (public, published only, paginated)
 exports.list = async (req, res) => {
   const { q = '', category = '' } = req.query;
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(24, Math.max(1, parseInt(req.query.limit, 10) || 9));
   const filter = { status: 'published' };
   if (CATEGORIES.includes(category)) filter.category = category;
   if (q) {
     const rx = new RegExp(escapeRegex(String(q).slice(0, 80)), 'i');
     filter.$or = [{ title: rx }, { excerpt: rx }];
   }
-  const posts = await Post.find(filter).sort('-createdAt').limit(50).select('-body').populate(withAuthor);
-  res.json({ posts });
+  const [posts, total] = await Promise.all([
+    Post.find(filter).sort('-createdAt').skip((page - 1) * limit).limit(limit).select('-body').populate(withAuthor),
+    Post.countDocuments(filter),
+  ]);
+  res.json({ posts, total, page, pages: Math.max(1, Math.ceil(total / limit)) });
 };
 
 // GET /api/posts/mine   (the logged-in user's posts, drafts included)
@@ -23,7 +28,7 @@ exports.mine = async (req, res) => {
   res.json({ posts });
 };
 
-// GET /api/posts/:id   (public, published only; counts a view)
+// GET /api/posts/:id   (public, published only; counts a view; includes related posts)
 exports.get = async (req, res) => {
   const post = await Post.findOneAndUpdate(
     { _id: req.params.id, status: 'published' },
@@ -31,7 +36,9 @@ exports.get = async (req, res) => {
     { returnDocument: 'after' }
   ).populate(withAuthor);
   if (!post) return res.status(404).json({ message: 'Post not found.' });
-  res.json({ post });
+  const related = await Post.find({ status: 'published', category: post.category, _id: { $ne: post._id } })
+    .sort('-createdAt').limit(3).select('-body').populate(withAuthor);
+  res.json({ post, related });
 };
 
 // POST /api/posts   (create blog)

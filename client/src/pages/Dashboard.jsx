@@ -91,7 +91,9 @@ export default function Dashboard() {
             {posts.map((p) => (
               <div key={p.id} className={`grid gap-2 ${COLS} sm:items-center px-5 py-4 border-t border-line first:border-0`}>
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{p.title}</p>
+                  {p.status === 'published'
+                    ? <Link to={`/blog/${p.id}`} className="font-medium truncate block hover:underline">{p.title}</Link>
+                    : <p className="font-medium truncate">{p.title}</p>}
                   <p className="text-xs text-mute">{p.category}</p>
                 </div>
                 <div>
@@ -99,7 +101,7 @@ export default function Dashboard() {
                     {p.status === 'published' ? 'Published' : 'Draft'}
                   </span>
                 </div>
-                <p className="text-sm text-mute">{p.views.toLocaleString()} views</p>
+                <p className="text-sm text-mute">{p.views.toLocaleString()} {p.views === 1 ? 'view' : 'views'}</p>
                 <p className="text-sm text-mute">{fmtDate(p.date)}</p>
                 <div className="flex gap-2 sm:justify-end">
                   <button className="btn btn-s !py-1.5" onClick={() => navigate(`/edit/${p.id}`)}>Edit</button>
