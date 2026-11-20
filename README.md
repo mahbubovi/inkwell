@@ -4,12 +4,22 @@ A responsive blog application. The frontend is built with React, React Router an
 
 ## Features
 - Register and log in with JWT authentication and bcrypt password hashing
-- Create, edit, delete and publish blog posts (drafts supported)
-- Public home feed read from MongoDB, with debounced search, category filters and "Load more" pagination
+- Full CRUD for blog posts: create, read, update and delete, with drafts, publish and unpublish, and owner-only access
+- Public home feed read from MongoDB with search (title, summary and content), category filters, sorting and "Load more" pagination. Filters live in the URL, so a filtered view can be shared
 - A dedicated page for each blog (`/blog/:id`) with author, date, read time, view count, copy link and related posts
 - Dashboard with per-user stats
 - Protected routes, session restore on refresh, and automatic logout when a token expires
 - Validation on the client and the server, plus rate limiting, Helmet and CORS
+
+## CRUD at a glance
+| Operation | Endpoint | Where in the app |
+|---|---|---|
+| Create | `POST /api/posts` | Create blog page: Publish or Save draft |
+| Read | `GET /api/posts`, `/posts/:id`, `/posts/mine` | Home feed, blog page, dashboard. Authors can preview their own drafts |
+| Update | `PUT /api/posts/:id`, `PATCH /api/posts/:id/status` | Edit page, plus Publish and Unpublish buttons on the dashboard |
+| Delete | `DELETE /api/posts/:id` | Dashboard and blog page, each with a "Confirm delete" step |
+
+Only the author can update or delete a post. Another user's request gets a 404, and drafts are never visible to anyone else.
 
 ## Project structure
 ```
@@ -67,7 +77,7 @@ To host the frontend separately (Vercel, Netlify), set `VITE_API_URL=https://you
 | `/` | Public | Home feed |
 | `/blog/:id` | Public | Individual blog page |
 | `/login`, `/register` | Logged-out only | Auth forms |
-| `/dashboard` | Logged-in | Your posts and stats |
+| `/dashboard` | Logged-in | Your posts, stats, search, filters, publish toggle |
 | `/create`, `/edit/:id` | Logged-in | Create or edit a blog |
 
 ## API reference
@@ -78,11 +88,12 @@ Base URL: `/api`. Protected routes need `Authorization: Bearer <token>`.
 | POST | `/auth/register` | No | Create an account, returns `{ user, token }` |
 | POST | `/auth/login` | No | Log in, returns `{ user, token }` |
 | GET | `/auth/me` | Yes | Current user |
-| GET | `/posts?q=&category=&page=&limit=` | No | Published posts, paginated: `{ posts, total, page, pages }` |
+| GET | `/posts?q=&category=&sort=&page=&limit=` | No | Published posts, paginated: `{ posts, total, page, pages }`. `sort` is `newest`, `oldest` or `popular`; `q` searches title, summary and content |
 | GET | `/posts/mine` | Yes | Your posts, drafts included |
-| GET | `/posts/:id` | No | One published post plus related posts (counts a view) |
+| GET | `/posts/:id` | No | One published post plus related posts (counts a view). A draft is returned only to its author |
 | POST | `/posts` | Yes | Create a blog post |
 | PUT | `/posts/:id` | Yes | Update your post |
+| PATCH | `/posts/:id/status` | Yes | Publish or unpublish your post (publishing needs at least 50 words) |
 | DELETE | `/posts/:id` | Yes | Delete your post |
 
 Validation errors return `422` with `{ message, errors: { field: message } }`.

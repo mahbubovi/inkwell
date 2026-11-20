@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CATEGORIES, readMins, useTitle, words } from '../lib/utils';
 
@@ -12,24 +13,27 @@ export default function CreatePost() {
   useTitle(id ? 'Edit post' : 'Create blog');
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState({ title: '', body: '', excerpt: '', category: CATEGORIES[0] });
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState('');          // 'published' | 'draft' while saving
   const [loading, setLoading] = useState(!!id);
   const [loadError, setLoadError] = useState('');
+  const [savedStatus, setSavedStatus] = useState('draft'); // status of the post when it was loaded (edit mode)
   const set = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   useEffect(() => {
     if (!id) return;
     let live = true;
-    api('/posts/mine')
+    api(`/posts/${id}`)
       .then((d) => {
         if (!live) return;
-        const p = d.posts.find((x) => x._id === id);
-        if (!p) setLoadError('We couldn’t find that post. It may have been deleted.');
-        else setForm({ title: p.title, body: p.body, excerpt: p.excerpt, category: p.category });
+        const p = d.post;
+        if (p.author?.id !== user.id) { setLoadError('You can only edit your own posts.'); return; }
+        setForm({ title: p.title, body: p.body, excerpt: p.excerpt, category: p.category });
+        setSavedStatus(p.status);
       })
-      .catch((e) => live && setLoadError(e.message))
+      .catch((e) => live && setLoadError(e.status === 404 ? 'We couldn’t find that post. It may have been deleted.' : e.message))
       .finally(() => live && setLoading(false));
     return () => { live = false; };
   }, [id]);
@@ -50,7 +54,7 @@ export default function CreatePost() {
         method: id ? 'PUT' : 'POST',
         body: { title, body, excerpt: form.excerpt.trim(), category: form.category, status },
       });
-      toast(status === 'published' ? 'Post published' : 'Draft saved');
+      toast(status === 'published' ? (id && savedStatus === 'published' ? 'Post updated' : 'Post published') : 'Draft saved');
       navigate('/dashboard');
     } catch (e) {
       setErrs(e.errors || {});
@@ -103,10 +107,10 @@ export default function CreatePost() {
           <p className="text-xs text-mute mt-1 text-right">{form.excerpt.length}/160</p>
         </div>
         <button type="button" disabled={!!busy} onClick={() => save('published')} className="btn btn-p w-full">
-          {busy === 'published' ? 'Please wait…' : 'Publish'}
+          {busy === 'published' ? 'Please wait…' : id && savedStatus === 'published' ? 'Update post' : 'Publish'}
         </button>
         <button type="button" disabled={!!busy} onClick={() => save('draft')} className="btn btn-s w-full">
-          {busy === 'draft' ? 'Please wait…' : 'Save draft'}
+          {busy === 'draft' ? 'Please wait…' : id && savedStatus === 'published' ? 'Move to drafts' : 'Save draft'}
         </button>
         <Link to="/dashboard" className="block text-center text-sm text-mute hover:text-ink">Cancel</Link>
       </aside>
