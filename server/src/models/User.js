@@ -5,11 +5,13 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 60 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    bio: { type: String, trim: true, maxlength: 160, default: '' },
     password: { type: String, required: true, minlength: 8, select: false },
+    passwordChangedAt: { type: Date, select: false },
   },
   {
     timestamps: true,
-    toJSON: { transform: (_doc, r) => ({ id: r._id, name: r.name, email: r.email }) },
+    toJSON: { transform: (_doc, r) => ({ id: r._id, name: r.name, email: r.email, bio: r.bio, createdAt: r.createdAt }) },
   }
 );
 
