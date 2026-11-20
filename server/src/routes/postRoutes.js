@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { body, param } = require('express-validator');
 const validate = require('../middleware/validate');
 const protect = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 const { CATEGORIES } = require('../models/Post');
 const c = require('../controllers/postController');
 
@@ -19,9 +20,10 @@ const postRules = [
 
 router.get('/', c.list);
 router.get('/mine', protect, c.mine); // must stay above '/:id'
-router.get('/:id', id, validate, c.get);
+router.get('/:id', optionalAuth, id, validate, c.get);
 router.post('/', protect, postRules, validate, c.create);
 router.put('/:id', protect, id, postRules, validate, c.update);
+router.patch('/:id/status', protect, id, body('status').isIn(['draft', 'published']).withMessage('Status must be draft or published.'), validate, c.setStatus);
 router.delete('/:id', protect, id, validate, c.remove);
 
 module.exports = router;

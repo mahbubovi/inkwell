@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { fmtDate, normalize, useTitle } from '../lib/utils';
+import { CATEGORIES, fmtDate, normalize, useTitle } from '../lib/utils';
 
-const COLS = 'sm:grid-cols-[minmax(0,1fr)_6.5rem_6rem_6.5rem_10rem]';
+const COLS = 'sm:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem_6.5rem_17.5rem]';
+const STATUS = [['all', 'All'], ['published', 'Published'], ['draft', 'Drafts']];
 
 export default function Dashboard() {
   useTitle('Dashboard');
@@ -15,7 +16,11 @@ export default function Dashboard() {
   const [posts, setPosts] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [armed, setArmed] = useState(null); // post id waiting for delete confirmation
+  const [armed, setArmed] = useState(null);   // post id waiting for delete confirmation
+  const [busyId, setBusyId] = useState(null); // post id with a request in flight
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState('all');
+  const [cat, setCat] = useState('All');
   const timer = useRef();
 
   useEffect(() => {
@@ -27,6 +32,11 @@ export default function Dashboard() {
     return () => ctrl.abort();
   }, [attempt]);
 
+  const shown = useMemo(() => (posts || []).filter((p) =>
+    (status === 'all' || p.status === status) &&
+    (cat === 'All' || p.category === cat) &&
+    (!q.trim() || p.title.toLowerCase().includes(q.trim().toLowerCase()))), [posts, status, cat, q]);
+
   async function remove(id) {
     if (armed !== id) {
       setArmed(id);
@@ -34,12 +44,24 @@ export default function Dashboard() {
       timer.current = setTimeout(() => setArmed(null), 3000);
       return;
     }
+    setBusyId(id);
     try {
       await api(`/posts/${id}`, { method: 'DELETE' });
       setPosts((p) => p.filter((x) => x.id !== id));
       toast('Post deleted');
     } catch (e) { toast(e.message); }
-    setArmed(null);
+    setArmed(null); setBusyId(null);
+  }
+
+  async function toggle(p) {
+    const next = p.status === 'published' ? 'draft' : 'published';
+    setBusyId(p.id);
+    try {
+      const d = await api(`/posts/${p.id}/status`, { method: 'PATCH', body: { status: next } });
+      setPosts((list) => list.map((x) => (x.id === p.id ? normalize(d.post) : x)));
+      toast(next === 'published' ? 'Post published' : 'Moved to drafts');
+    } catch (e) { toast(e.errors?.status || e.message); }
+    setBusyId(null);
   }
 
   const published = posts?.filter((p) => p.status === 'published').length ?? 0;
@@ -53,7 +75,7 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl font-semibold">Hello, {user.name.split(' ')[0]}</h1>
-          <p className="text-sm text-mute">Manage your posts and see how they’re doing.</p>
+          <p className="text-sm text-mute">Create, edit, publish and delete your posts.</p>
         </div>
         <Link to="/create" className="btn btn-p">New post</Link>
       </div>
@@ -77,7 +99,26 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="card mt-6 overflow-hidden">
+          {posts.length > 0 && (
+            <div className="mt-6 flex flex-col lg:flex-row gap-3 lg:items-center">
+              <div className="flex gap-2">
+                {STATUS.map(([k, label]) => (
+                  <button key={k} aria-pressed={status === k} onClick={() => setStatus(k)}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm ${status === k ? 'bg-brand text-onbrand border-brand' : 'border-line text-mute hover:text-ink'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label htmlFor="dq" className="sr-only">Search your posts</label>
+              <input id="dq" type="search" className="inp lg:max-w-xs" placeholder="Search your posts" value={q} onChange={(e) => setQ(e.target.value)} />
+              <label htmlFor="dcat" className="sr-only">Filter by category</label>
+              <select id="dcat" className="inp lg:w-44" value={cat} onChange={(e) => setCat(e.target.value)}>
+                {['All', ...CATEGORIES].map((c) => <option key={c} value={c}>{c === 'All' ? 'All categories' : c}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="card mt-4 overflow-hidden">
             <div className={`hidden sm:grid ${COLS} px-5 py-3 text-sm text-mute bg-soft`}>
               <span>Title</span><span>Status</span><span>Views</span><span>Updated</span><span />
             </div>
@@ -88,12 +129,16 @@ export default function Dashboard() {
                 <Link to="/create" className="btn btn-p mt-4">Write your first post</Link>
               </div>
             )}
-            {posts.map((p) => (
+            {posts.length > 0 && shown.length === 0 && (
+              <div className="p-10 text-center">
+                <p className="font-medium">No posts match these filters</p>
+                <button className="btn btn-s mt-4" onClick={() => { setQ(''); setStatus('all'); setCat('All'); }}>Clear filters</button>
+              </div>
+            )}
+            {shown.map((p) => (
               <div key={p.id} className={`grid gap-2 ${COLS} sm:items-center px-5 py-4 border-t border-line first:border-0`}>
                 <div className="min-w-0">
-                  {p.status === 'published'
-                    ? <Link to={`/blog/${p.id}`} className="font-medium truncate block hover:underline">{p.title}</Link>
-                    : <p className="font-medium truncate">{p.title}</p>}
+                  <Link to={`/blog/${p.id}`} className="font-medium truncate block hover:underline">{p.title}</Link>
                   <p className="text-xs text-mute">{p.category}</p>
                 </div>
                 <div>
@@ -103,9 +148,10 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-mute">{p.views.toLocaleString()} {p.views === 1 ? 'view' : 'views'}</p>
                 <p className="text-sm text-mute">{fmtDate(p.date)}</p>
-                <div className="flex gap-2 sm:justify-end">
+                <div className="flex flex-wrap gap-2 sm:justify-end">
                   <button className="btn btn-s !py-1.5" onClick={() => navigate(`/edit/${p.id}`)}>Edit</button>
-                  <button className="btn btn-s !py-1.5" onClick={() => remove(p.id)}>{armed === p.id ? 'Confirm delete' : 'Delete'}</button>
+                  <button className="btn btn-s !py-1.5" disabled={busyId === p.id} onClick={() => toggle(p)}>{p.status === 'published' ? 'Unpublish' : 'Publish'}</button>
+                  <button className="btn btn-s !py-1.5" disabled={busyId === p.id} onClick={() => remove(p.id)}>{armed === p.id ? 'Confirm delete' : 'Delete'}</button>
                 </div>
               </div>
             ))}
