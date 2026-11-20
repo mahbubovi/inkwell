@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PostDetail from './pages/PostDetail';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import CreatePost from './pages/CreatePost';
 import { useTitle } from './lib/utils';
 
@@ -34,6 +35,7 @@ export default function App() {
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/create" element={<CreatePost key="new" />} />
             <Route path="/edit/:id" element={<CreatePost key="edit" />} />
           </Route>
