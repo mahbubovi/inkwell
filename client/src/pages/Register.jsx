@@ -44,7 +44,7 @@ export default function Register() {
       <form onSubmit={submit} noValidate className="mt-6 space-y-4">
         <Field id="name" label="Full name" autoComplete="name" placeholder="Ada Lovelace" value={form.name} onChange={set} error={errs.name} />
         <Field id="email" label="Email" type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={set} error={errs.email} />
-        <Field id="password" label="Password" type="password" autoComplete="new-password" placeholder="At least 8 characters, with a number" value={form.password} onChange={set} error={errs.password} />
+        <Field id="password" label="Password" type="password" autoComplete="new-password" placeholder="8+ characters with a number" value={form.password} onChange={set} error={errs.password} />
         <Field id="confirm" label="Confirm password" type="password" autoComplete="new-password" value={form.confirm} onChange={set} error={errs.confirm} />
         <button type="submit" disabled={busy} className="btn btn-p w-full">{busy ? 'Please wait…' : 'Create account'}</button>
       </form>

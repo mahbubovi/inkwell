@@ -14,7 +14,7 @@ export default function Field({ label, id, error, type = 'text', ...props }) {
         />
         {isPw && (
           <button type="button" onClick={() => setShow((s) => !s)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-brand px-2 py-1">
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-9 px-3 text-xs font-medium text-brand">
             {show ? 'Hide' : 'Show'}
           </button>
         )}

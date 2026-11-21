@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { CATEGORIES, normalize, useTitle } from '../lib/utils';
 import PostCard from '../components/PostCard';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const PAGE_SIZE = 6;
 const SORTS = { newest: 'Newest', oldest: 'Oldest', popular: 'Most viewed' };
@@ -91,7 +92,7 @@ export default function Home() {
             <button className="btn btn-s mt-4" onClick={() => setAttempt((a) => a + 1)}>Try again</button>
           </div>
         )}
-        {!error && !posts && <p className="text-mute">Loading posts…</p>}
+        {!error && !posts && <CardGridSkeleton />}
         {!error && posts?.length === 0 && (
           <div className="card p-10 text-center">
             <p className="font-medium">No posts found</p>

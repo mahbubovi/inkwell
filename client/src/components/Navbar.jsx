@@ -23,7 +23,7 @@ export default function Navbar() {
           <NavLink to="/create" className={link}>Create blog</NavLink>
           <NavLink to="/profile" className={link}>Profile</NavLink>
           <button
-            onClick={async () => { await logout(); toast('You’re logged out'); navigate('/'); }}
+            onClick={async () => { navigate('/'); await logout(); toast('You’re logged out'); }}
             className="px-3 py-2 rounded-md text-sm font-medium text-mute hover:text-ink text-left">
             Log out
           </button>

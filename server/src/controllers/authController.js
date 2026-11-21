@@ -12,12 +12,12 @@ const Session = require('../models/Session');
  */
 const COOKIE = 'ink_rt';
 const REFRESH_DAYS = Number(process.env.REFRESH_TOKEN_DAYS) || 7;
-const GRACE_MS = 10 * 1000; // an old refresh token still works this long after rotation (two tabs refreshing together)
+const GRACE_MS = Number(process.env.REFRESH_GRACE_MS ?? 10000); // an old refresh token still works this long after rotation (two tabs refreshing together)
 
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const newToken = () => crypto.randomBytes(48).toString('base64url');
 const signAccess = (user) =>
-  jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.ACCESS_TOKEN_EXPIRES || '15m' });
+  jwt.sign({ id: user._id, v: user.tokenVersion }, process.env.JWT_SECRET, { expiresIn: process.env.ACCESS_TOKEN_EXPIRES || '15m' });
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -101,6 +101,7 @@ exports.logout = async (req, res) => {
 // POST /api/auth/logout-all   (ends every device's session)
 exports.logoutAll = async (req, res) => {
   await Session.deleteMany({ user: req.user._id });
+  await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } }); // also kills access tokens that are still unexpired
   clearCookie(res);
   res.json({ message: 'Signed out everywhere.' });
 };
@@ -143,7 +144,7 @@ exports.changePassword = async (req, res) => {
   if (currentPassword === newPassword)
     return res.status(422).json({ message: 'Choose a different password.', errors: { newPassword: 'Choose a password you haven’t used before.' } });
   user.password = newPassword;
-  user.passwordChangedAt = new Date(Date.now() - 1000);
+  user.tokenVersion += 1;
   await user.save();
   await Session.deleteMany({ user: user._id });
   await startSession(req, res, user);

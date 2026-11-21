@@ -14,7 +14,7 @@ export function ToastProvider({ children }) {
   return (
     <Ctx.Provider value={toast}>
       {children}
-      <div aria-live="polite" className="fixed inset-x-0 bottom-4 z-40 flex flex-col items-center gap-2 pointer-events-none">
+      <div aria-live="polite" className="fixed inset-x-0 bottom-20 sm:bottom-6 z-40 flex flex-col items-center gap-2 pointer-events-none">
         {items.map((t) => (
           <div key={t.id} className="rounded-md bg-ink text-bg text-sm px-4 py-2.5 shadow-lg">{t.msg}</div>
         ))}

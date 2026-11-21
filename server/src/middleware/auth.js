@@ -8,11 +8,11 @@ module.exports = async function protect(req, res, next) {
   if (!token) return res.status(401).json({ message: 'Log in to continue.' });
 
   try {
-    const { id, iat } = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(id).select('+passwordChangedAt');
+    const { id, v } = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(id);
     if (!user) throw new Error('user not found');
-    // A password change invalidates access tokens issued before it.
-    if (user.passwordChangedAt && iat * 1000 < user.passwordChangedAt.getTime()) throw new Error('password changed');
+    // A password change (or "sign out everywhere") bumps tokenVersion, which instantly invalidates older access tokens.
+    if ((v ?? 0) !== user.tokenVersion) throw new Error('token revoked');
     req.user = user;
     next();
   } catch {
