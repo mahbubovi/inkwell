@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     bio: { type: String, trim: true, maxlength: 160, default: '' },
     password: { type: String, required: true, minlength: 8, select: false },
-    passwordChangedAt: { type: Date, select: false },
+    tokenVersion: { type: Number, default: 0 }, // bumped on password change / sign out everywhere: invalidates every access token issued before
   },
   {
     timestamps: true,

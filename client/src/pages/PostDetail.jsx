@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { coverStyle, fmtDate, normalize, useTitle } from '../lib/utils';
 import PostCard from '../components/PostCard';
+import { DetailSkeleton } from '../components/Skeleton';
 
 // Individual blog page: /blog/:id. Authors can also open their own drafts here (preview).
 export default function PostDetail() {
@@ -52,14 +53,14 @@ export default function PostDetail() {
       </section>
     );
   }
-  if (!post) return <p className="max-w-3xl mx-auto px-4 py-10 text-mute">Loading post…</p>;
+  if (!post) return <DetailSkeleton />;
 
   const isOwner = user && user.id === post.authorId;
   const isDraft = post.status !== 'published';
   return (
     <>
       <article className="max-w-3xl mx-auto px-4 pt-8 pb-12">
-        <Link to={isOwner ? '/dashboard' : '/'} className="text-sm text-mute hover:text-ink">← {isOwner ? 'Dashboard' : 'All posts'}</Link>
+        <Link to={isOwner ? '/dashboard' : '/'} className="inline-block py-2 text-sm text-mute hover:text-ink">← {isOwner ? 'Dashboard' : 'All posts'}</Link>
         {isDraft && (
           <p role="status" className="mt-4 rounded-md border border-line bg-soft px-4 py-3 text-sm">
             <span className="font-medium">Draft preview.</span> Only you can see this post until you publish it.

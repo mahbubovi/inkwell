@@ -1,0 +1,19 @@
+# Render Blueprint: one web service that serves the API and the built React app.
+# Deploy: Render dashboard > New > Blueprint > pick this repository.
+services:
+  - type: web
+    name: inkwell
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: MONGO_URI
+        sync: false          # paste your MongoDB Atlas connection string in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render creates a long random secret

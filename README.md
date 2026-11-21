@@ -1,142 +1,191 @@
-# Inkwell: a React blog app with a Node.js + Express API
+# Inkwell
 
-A responsive blog application. The frontend is built with React, React Router and Tailwind CSS (Vite). It talks to a REST API built with Node.js, Express and MongoDB.
+**A full stack blog platform where people write, publish and discover posts on engineering, design and product.**
+
+Built with React, Express and MongoDB. Features secure token-based authentication, full post CRUD, private dashboards, a profile page with session management, and a responsive UI that works from phones to desktops.
+
+[![CI](https://github.com/mahbubovi/inkwell/actions/workflows/ci.yml/badge.svg)](https://github.com/mahbubovi/inkwell/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-22-3c873a)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+**Live demo:** https://YOUR-APP.vercel.app &nbsp;|&nbsp; **Repository:** https://github.com/mahbubovi/inkwell
+
+![Inkwell home page](docs/screenshots/home.jpg)
 
 ## Features
-- Secure authentication: short-lived JWT access token plus a rotating httpOnly refresh cookie, bcrypt password hashing, and revocable sessions
-- Full CRUD for blog posts: create, read, update and delete, with drafts, publish and unpublish, and owner-only access
-- Public home feed read from MongoDB with search (title, summary and content), category filters, sorting and "Load more" pagination. Filters live in the URL, so a filtered view can be shared
-- A dedicated page for each blog (`/blog/:id`) with author, date, read time, view count, copy link and related posts
-- Dashboard with per-user stats
-- Protected routes on the client and the API, silent session restore after a refresh, and logout that syncs across open tabs
-- Dashboard that lists only the logged-in user's posts
-- Profile page: edit name and bio, change password, see your stats, and view or end sessions on other devices
-- Validation on the client and the server, plus rate limiting, Helmet and CORS
 
-## CRUD at a glance
-| Operation | Endpoint | Where in the app |
-|---|---|---|
-| Create | `POST /api/posts` | Create blog page: Publish or Save draft |
-| Read | `GET /api/posts`, `/posts/:id`, `/posts/mine` | Home feed, blog page, dashboard. Authors can preview their own drafts |
-| Update | `PUT /api/posts/:id`, `PATCH /api/posts/:id/status` | Edit page, plus Publish and Unpublish buttons on the dashboard |
-| Delete | `DELETE /api/posts/:id` | Dashboard and blog page, each with a "Confirm delete" step |
+- **Authentication.** Register and log in. A short-lived JWT access token (kept in memory) is paired with a rotating refresh token in an httpOnly cookie. Passwords are hashed with bcrypt.
+- **Full CRUD for posts.** Create, read, update and delete. Drafts, publish and unpublish, and owner-only access enforced on the server.
+- **Private dashboard.** Lists only the logged-in user's posts, with stats, search, status and category filters.
+- **Discovery.** Public feed with search across titles, summaries and content, category filters, sorting, pagination, and shareable filter URLs.
+- **Blog pages.** A page per post with author, read time, view count, related posts and a copy-link button. Authors can preview their own drafts.
+- **Profile.** Edit name and bio, change password, and see or end sessions on other devices.
+- **Responsive and accessible.** Mobile-first layout, sticky save bar on phones, skeleton loaders, dark mode, keyboard focus styles and a skip link.
+- **Production ready.** Content Security Policy, rate limiting, gzip, long-lived asset caching, health check, graceful shutdown and CI.
 
-Only the author can update or delete a post. Another user's request gets a 404, and drafts are never visible to anyone else.
+| Feed and filters | Blog page |
+|---|---|
+| ![Home](docs/screenshots/home.jpg) | ![Post](docs/screenshots/post.jpg) |
+| **Dashboard** | **Editor** |
+| ![Dashboard](docs/screenshots/dashboard.jpg) | ![Editor](docs/screenshots/editor.jpg) |
+| **Profile and sessions** | **Mobile** |
+| ![Profile](docs/screenshots/profile.jpg) | ![Mobile](docs/screenshots/mobile.jpg) |
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Frontend | React 19, React Router, Tailwind CSS, Vite |
+| Backend | Node.js, Express 5, Mongoose |
+| Database | MongoDB (local or Atlas) |
+| Security | JWT, bcrypt, httpOnly cookies, Helmet (CSP), express-rate-limit, express-validator |
+| Quality | Node test runner integration tests, GitHub Actions CI |
+| Deployment | Vercel (website and API as a serverless function), or Render |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  B["Browser<br/>React + Tailwind"] -- "JSON + Bearer access token" --> A["Express API<br/>/api/auth, /api/posts"]
+  B -. "httpOnly refresh cookie" .-> A
+  A --> M[("MongoDB<br/>users, posts, sessions")]
+  A -- "serves built app" --> B
+```
+
+In production one Express service serves both the API and the built React app, so the browser talks to a single origin and the login cookie stays first-party.
 
 ## Project structure
+
 ```
 inkwell/
-├── client/                      # React + Vite + Tailwind
+├── client/                 React app (Vite + Tailwind)
 │   └── src/
-│       ├── main.jsx, App.jsx    # Providers and routes
-│       ├── lib/                 # api.js (fetch wrapper), utils.js
-│       ├── context/             # AuthContext, ToastContext
-│       ├── components/          # Navbar, PostCard, ReadModal, Field, ProtectedRoute
-│       └── pages/               # Home, Login, Register, Dashboard, CreatePost
-└── server/                      # Express API
-    └── src/                     # config, models, controllers, routes, middleware
+│       ├── components/     Navbar, PostCard, Field, Skeleton, ErrorBoundary, route guards
+│       ├── context/        AuthContext, ToastContext
+│       ├── lib/            api.js (fetch wrapper with silent token refresh), utils.js
+│       └── pages/          Home, PostDetail, Login, Register, Dashboard, CreatePost, Profile
+├── server/                 Express API
+│   ├── src/                config, models, controllers, routes, middleware, seed.js
+│   └── test/               API integration tests
+├── docs/                   DEPLOYMENT.md, screenshots, LinkedIn drafts
+├── api/index.js            Vercel serverless entry point (wraps the Express app)
+├── vercel.json             Vercel build, routing and security headers
+├── render.yaml             Render blueprint (alternative host)
+└── .github/workflows/      CI (tests and build)
 ```
 
-## Get a MongoDB database
-Pick one, then put its connection string in `server/.env` as `MONGO_URI`.
+## Getting started
 
-| Option | How | `MONGO_URI` |
+You need Node.js 22 (LTS) and a MongoDB database: a local install, Docker (`docker run -d -p 27017:27017 --name mongo mongo:7`), or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster.
+
+```bash
+git clone https://github.com/mahbubovi/inkwell.git
+cd inkwell
+npm install                       # installs the dev runner
+npm --prefix server install
+npm --prefix client install
+
+cp server/.env.example server/.env   # then set MONGO_URI and JWT_SECRET
+npm run seed                         # optional: sample authors and 10 posts (password: secret123)
+npm run dev                          # API on :5000, web app on http://localhost:5173
+```
+
+On Windows PowerShell use `copy server\.env.example server\.env`.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the API and the Vite dev server together |
+| `npm run build` | Installs dependencies and builds the React app into `client/dist` |
+| `npm start` | Starts the API, which also serves `client/dist` |
+| `npm run seed` | Adds sample users and posts (`--reset` after `--` wipes first) |
+| `npm test` | Runs the API integration tests (needs MongoDB on `127.0.0.1:27017`) |
+
+### Environment variables
+
+| Variable | Required | Purpose |
 |---|---|---|
-| MongoDB Atlas (free, no install) | Create a free M0 cluster at mongodb.com/atlas, add a database user, allow your IP under Network Access, then copy the "Drivers" connection string | `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/inkwell` |
-| Local install | Install MongoDB Community Server (it runs as a service on port 27017) | `mongodb://127.0.0.1:27017/inkwell` |
-| Docker | `docker run -d --name mongo -p 27017:27017 -v mongo-data:/data/db mongo:7` | `mongodb://127.0.0.1:27017/inkwell` |
-
-## Run it locally
-You need Node.js 18+ and a MongoDB database (see above). Use two terminals.
-
-**Terminal 1: API**
-```bash
-cd server
-npm install
-cp .env.example .env      # set MONGO_URI and a long random JWT_SECRET
-npm run seed              # optional: 3 sample authors and 10 posts (password: secret123)
-npm run dev               # http://localhost:5000
-```
-
-**Terminal 2: React app**
-```bash
-cd client
-npm install
-npm run dev               # http://localhost:5173
-```
-Vite proxies `/api` to port 5000, so there are no CORS settings to change in development.
-
-## Production build
-```bash
-cd client && npm run build      # creates client/dist
-cd ../server && npm start       # serves the API and the built app on http://localhost:5000
-```
-To host the frontend separately (Vercel, Netlify), set `VITE_API_URL=https://your-api.example.com/api` in the client and add the frontend URL to `CLIENT_URL` in the server `.env`.
-
-## Routes
-| Path | Access | Page |
-|---|---|---|
-| `/` | Public | Home feed |
-| `/blog/:id` | Public | Individual blog page |
-| `/login`, `/register` | Logged-out only | Auth forms |
-| `/dashboard` | Logged-in | Your posts, stats, search, filters, publish toggle |
-| `/profile` | Logged-in | Profile, password and active sessions |
-| `/create`, `/edit/:id` | Logged-in | Create or edit a blog |
+| `MONGO_URI` | Yes | MongoDB connection string |
+| `JWT_SECRET` | Yes | Signs access tokens. At least 32 characters in production |
+| `PORT` | No | Default `5000` |
+| `ACCESS_TOKEN_EXPIRES` | No | Access token lifetime, default `15m` |
+| `REFRESH_TOKEN_DAYS` | No | Session length, default `7` |
+| `COOKIE_SAMESITE` | No | `lax` (default) or `none` when the frontend is on a different site |
+| `CLIENT_URL` | No | Comma-separated origins allowed to call the API directly |
+| `SEED_PASSWORD` | No | Password for the sample accounts created by `npm run seed` |
+| `NODE_ENV` | No | `production` turns on Secure cookies, HSTS and proxy trust |
+| `VITE_API_URL` | No (client) | API base URL when the client is hosted separately |
 
 ## API reference
-Base URL: `/api`. Protected routes need `Authorization: Bearer <token>`.
+
+Base URL `/api`. Protected routes need `Authorization: Bearer <access token>`.
 
 | Method | Endpoint | Auth | Purpose |
 |---|---|---|---|
-| POST | `/auth/register` | No | Create an account, returns `{ user, token }` |
-| POST | `/auth/login` | No | Log in, returns `{ user, token }` |
-| POST | `/auth/refresh` | Cookie | New access token; rotates the refresh cookie |
+| POST | `/auth/register` | No | Create an account, returns `{ user, token }` and sets the refresh cookie |
+| POST | `/auth/login` | No | Log in |
+| POST | `/auth/refresh` | Cookie | New access token, rotates the refresh cookie |
 | POST | `/auth/logout` | Cookie | End this device's session |
 | POST | `/auth/logout-all` | Yes | End every session |
 | GET | `/auth/me` | Yes | Current user |
-| GET | `/auth/profile` | Yes | User plus post stats |
-| PATCH | `/auth/profile` | Yes | Update name and bio |
-| PATCH | `/auth/password` | Yes | Change password (ends all other sessions) |
-| GET | `/auth/sessions` | Yes | Devices you're logged in on |
+| GET / PATCH | `/auth/profile` | Yes | Read profile and stats / update name and bio |
+| PATCH | `/auth/password` | Yes | Change password (ends other sessions) |
+| GET | `/auth/sessions` | Yes | Devices you are logged in on |
 | DELETE | `/auth/sessions/:id` | Yes | Sign out one device |
-| GET | `/posts?q=&category=&sort=&page=&limit=` | No | Published posts, paginated: `{ posts, total, page, pages }`. `sort` is `newest`, `oldest` or `popular`; `q` searches title, summary and content |
+| GET | `/posts?q=&category=&sort=&page=&limit=` | No | Published posts, paginated: `{ posts, total, page, pages }` |
 | GET | `/posts/mine` | Yes | Your posts, drafts included |
-| GET | `/posts/:id` | No | One published post plus related posts (counts a view). A draft is returned only to its author |
-| POST | `/posts` | Yes | Create a blog post |
+| GET | `/posts/:id` | No | A published post plus related posts. A draft is returned only to its author |
+| POST | `/posts` | Yes | Create a post |
 | PUT | `/posts/:id` | Yes | Update your post |
-| PATCH | `/posts/:id/status` | Yes | Publish or unpublish your post (publishing needs at least 50 words) |
+| PATCH | `/posts/:id/status` | Yes | Publish or unpublish (publishing needs at least 50 words) |
 | DELETE | `/posts/:id` | Yes | Delete your post |
+| GET | `/health` | No | Health check including database status |
 
 Validation errors return `422` with `{ message, errors: { field: message } }`.
 
 ## Authentication design
+
 | Part | How it works |
 |---|---|
-| Access token | JWT valid for 15 minutes (`ACCESS_TOKEN_EXPIRES`), sent as `Authorization: Bearer`. The browser keeps it in memory only, never in localStorage |
-| Refresh token | Random string in an httpOnly cookie that JavaScript cannot read, scoped to `/api/auth`, valid 7 days (`REFRESH_TOKEN_DAYS`). Rotated on every use |
-| Session storage | The database stores only a SHA-256 hash of the refresh token (`sessions` collection), so sessions can be listed and revoked, and a database leak cannot be used to log in |
-| Silent refresh | When the access token expires, the client refreshes once and retries the request, so users are not logged out mid-task |
-| Token theft check | Reusing an already-rotated refresh token after a 10-second grace period ends that session |
-| Password change | Ends all other sessions and rejects older access tokens |
-| Brute force | Login and register allow 20 failed attempts per 15 minutes per IP |
-| Private routes | `ProtectedRoute` in React, plus a `protect` middleware on every private API route. `GET /posts/mine` filters by the token's user id, so one user can never see another user's dashboard data |
+| Access token | JWT valid for 15 minutes, sent as a Bearer token. Held in browser memory only, never in localStorage |
+| Refresh token | Random string in an httpOnly cookie that JavaScript cannot read. Scoped to `/api/auth`, valid for 7 days, rotated on every use |
+| Session storage | The database stores only a SHA-256 hash of the refresh token, so sessions can be listed and revoked, and a leaked database cannot be used to log in |
+| Silent refresh | An expired access token is refreshed once and the request retried, so users are not logged out mid-task |
+| Reuse detection | An old refresh token presented after a short grace period ends that session |
+| Password change / sign out everywhere | Ends sessions and bumps a `tokenVersion` on the user, so every earlier access token is rejected immediately |
+| Brute force | 20 failed login or register attempts per 15 minutes per IP (counted per server instance, so on serverless hosting use a shared store such as Redis if you need strict limits) |
+| Private data | `GET /posts/mine` filters by the id inside the token. Edit and delete queries include the author, so another user's request gets a 404 |
 
-## Database design (MongoDB + Mongoose)
-| Collection | Fields | Notes |
+## Database design
+
+| Collection | Key fields | Notes |
 |---|---|---|
-| `users` | `name`, `email` (unique), `bio`, `password`, `passwordChangedAt`, timestamps | Password is stored as a bcrypt hash (cost 12) and is excluded from queries by default (`select: false`) |
-| `posts` | `title`, `body`, `excerpt`, `category`, `status`, `views`, `readMinutes`, `author` (ref to `users`), timestamps | Index on `{ status, createdAt }` for the feed and on `author` for the dashboard; `author` is populated with the writer's name |
+| `users` | `name`, `email` (unique), `bio`, `password`, `tokenVersion` | Passwords are bcrypt hashes (cost 12) and excluded from queries by default |
+| `posts` | `title`, `body`, `excerpt`, `category`, `status`, `views`, `readMinutes`, `author` | Indexes on `{ status, createdAt }` and `author` |
+| `sessions` | `user`, `tokenHash` (unique), `prevTokenHash`, `userAgent`, `expiresAt` | One document per device. A TTL index removes expired sessions |
 
-| `sessions` | `user`, `tokenHash` (unique), `prevTokenHash`, `userAgent`, `expiresAt` | One document per logged-in device. A TTL index removes expired sessions automatically |
+## Testing
 
-How the data stays safe:
-- Plain-text passwords never reach the database or any API response
-- The JWT secret and database URL live in `.env`, which is git-ignored
-- Users can only edit or delete their own posts; the check is part of the database query
-- Every write is validated on the server before it touches the database
+```bash
+npm test
+```
 
-## Before going live
-- Set `NODE_ENV=production` so the refresh cookie is marked Secure, and serve the site over HTTPS
-- If the frontend and API are on different sites, set `COOKIE_SAMESITE=none` and add the frontend URL to `CLIENT_URL`
-- Self-host fonts, then re-enable Helmet's Content Security Policy
-- Use a strong `JWT_SECRET` and restrict `CLIENT_URL` to your real domain
+Nine integration tests cover registration, login, token refresh and rotation, logout, post CRUD with draft privacy and ownership rules, dashboard isolation, search, sorting and pagination, and password changes. They run on every push through GitHub Actions.
+
+## Deployment
+
+The project deploys to **Vercel** with a free MongoDB Atlas database: Vercel serves the React build and runs the Express API as a serverless function, so the whole app lives at one URL. A `render.yaml` blueprint is included as an alternative. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for step-by-step instructions and troubleshooting.
+
+## Roadmap
+
+- Comments and likes
+- Rich text or Markdown editor with image upload
+- Email verification and password reset
+- Tags and author pages
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+Built by [@mahbubovi](https://github.com/mahbubovi).

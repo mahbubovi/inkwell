@@ -20,7 +20,16 @@ export default function CreatePost() {
   const [loading, setLoading] = useState(!!id);
   const [loadError, setLoadError] = useState('');
   const [savedStatus, setSavedStatus] = useState('draft'); // status of the post when it was loaded (edit mode)
-  const set = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const [dirty, setDirty] = useState(false);     // unsaved changes
+  const set = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setDirty(true); };
+
+  // Warn before a refresh or tab close would throw away unsaved writing.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
   useEffect(() => {
     if (!id) return;
@@ -55,6 +64,7 @@ export default function CreatePost() {
         body: { title, body, excerpt: form.excerpt.trim(), category: form.category, status },
       });
       toast(status === 'published' ? (id && savedStatus === 'published' ? 'Post updated' : 'Post published') : 'Draft saved');
+      setDirty(false);
       navigate('/dashboard');
     } catch (e) {
       setErrs(e.errors || {});
@@ -72,7 +82,7 @@ export default function CreatePost() {
   );
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} noValidate className="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_18rem] gap-8 items-start">
+    <form onSubmit={(e) => e.preventDefault()} noValidate className="max-w-5xl mx-auto px-4 pt-8 pb-28 lg:pb-8 grid lg:grid-cols-[1fr_18rem] gap-8 items-start">
       <div className="space-y-5">
         <h1 className="font-serif text-3xl font-semibold">{id ? 'Edit post' : 'New post'}</h1>
         <div>
@@ -106,13 +116,16 @@ export default function CreatePost() {
           <Err>{errs.excerpt}</Err>
           <p className="text-xs text-mute mt-1 text-right">{form.excerpt.length}/160</p>
         </div>
-        <button type="button" disabled={!!busy} onClick={() => save('published')} className="btn btn-p w-full">
-          {busy === 'published' ? 'Please wait…' : id && savedStatus === 'published' ? 'Update post' : 'Publish'}
-        </button>
-        <button type="button" disabled={!!busy} onClick={() => save('draft')} className="btn btn-s w-full">
-          {busy === 'draft' ? 'Please wait…' : id && savedStatus === 'published' ? 'Move to drafts' : 'Save draft'}
-        </button>
-        <Link to="/dashboard" className="block text-center text-sm text-mute hover:text-ink">Cancel</Link>
+        {/* On phones the save buttons stay pinned to the bottom of the screen; on desktop they sit in this panel. */}
+        <div className="fixed bottom-0 inset-x-0 z-30 flex gap-3 border-t border-line bg-card px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:static lg:z-auto lg:flex-col lg:border-0 lg:bg-transparent lg:p-0">
+          <button type="button" disabled={!!busy} onClick={() => save('published')} className="btn btn-p flex-1 lg:w-full">
+            {busy === 'published' ? 'Please wait…' : id && savedStatus === 'published' ? 'Update post' : 'Publish'}
+          </button>
+          <button type="button" disabled={!!busy} onClick={() => save('draft')} className="btn btn-s flex-1 lg:w-full">
+            {busy === 'draft' ? 'Please wait…' : id && savedStatus === 'published' ? 'Move to drafts' : 'Save draft'}
+          </button>
+        </div>
+        <Link to="/dashboard" className="block text-center text-sm text-mute hover:text-ink py-2">Cancel</Link>
       </aside>
     </form>
   );

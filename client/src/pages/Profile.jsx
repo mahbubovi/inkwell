@@ -81,13 +81,13 @@ export default function Profile() {
   return (
     <section className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div className="card p-6 flex flex-wrap items-center gap-4">
-        <span className="grid place-items-center h-16 w-16 rounded-full bg-soft text-brand font-serif text-3xl font-semibold">{user.name[0]}</span>
-        <div className="flex-1 min-w-0">
-          <h1 className="font-serif text-3xl font-semibold truncate">{user.name}</h1>
-          <p className="text-sm text-mute truncate">{user.email}</p>
+        <span className="grid place-items-center shrink-0 h-16 w-16 rounded-full bg-soft text-brand font-serif text-3xl font-semibold">{user.name[0]}</span>
+        <div className="flex-1 min-w-[12rem]">
+          <h1 className="font-serif text-3xl font-semibold break-words">{user.name}</h1>
+          <p className="text-sm text-mute break-all">{user.email}</p>
           <p className="text-sm text-mute">Member since {new Date(user.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' })}</p>
         </div>
-        <button className="btn btn-s" onClick={async () => { await logout(); toast('You’re logged out'); navigate('/'); }}>Log out</button>
+        <button className="btn btn-s" onClick={async () => { navigate('/'); await logout(); toast('You’re logged out'); }}>Log out</button>
         {user.bio && <p className="w-full text-ink">{user.bio}</p>}
       </div>
 
@@ -114,7 +114,7 @@ export default function Profile() {
       <form onSubmit={changePassword} noValidate className="card p-6 space-y-4">
         <h2 className="font-serif text-xl font-semibold">Change password</h2>
         <Field id="currentPassword" label="Current password" type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} error={pwErrs.currentPassword} />
-        <Field id="newPassword" label="New password" type="password" autoComplete="new-password" placeholder="At least 8 characters, with a number" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} error={pwErrs.newPassword} />
+        <Field id="newPassword" label="New password" type="password" autoComplete="new-password" placeholder="8+ characters with a number" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} error={pwErrs.newPassword} />
         <Field id="confirm" label="Confirm new password" type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} error={pwErrs.confirm} />
         <p className="text-sm text-mute">Changing your password signs you out on every other device.</p>
         <button type="submit" disabled={pwBusy} className="btn btn-p">{pwBusy ? 'Updating…' : 'Update password'}</button>

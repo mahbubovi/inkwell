@@ -138,7 +138,7 @@ export default function Dashboard() {
             {shown.map((p) => (
               <div key={p.id} className={`grid gap-2 ${COLS} sm:items-center px-5 py-4 border-t border-line first:border-0`}>
                 <div className="min-w-0">
-                  <Link to={`/blog/${p.id}`} className="font-medium truncate block hover:underline">{p.title}</Link>
+                  <Link to={`/blog/${p.id}`} className="font-medium sm:truncate block py-1 hover:underline">{p.title}</Link>
                   <p className="text-xs text-mute">{p.category}</p>
                 </div>
                 <div>

@@ -24,8 +24,9 @@ function NotFound() {
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-brand focus:px-4 focus:py-2 focus:text-onbrand">Skip to content</a>
       <Navbar />
-      <main className="flex-1">
+      <main id="main" tabIndex={-1} className="flex-1 outline-none">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/blog/:id" element={<PostDetail />} />
@@ -43,7 +44,7 @@ export default function App() {
         </Routes>
       </main>
       <footer className="border-t border-line text-sm text-mute">
-        <div className="max-w-6xl mx-auto px-4 py-6">© 2026 Inkwell. Write something worth reading.</div>
+        <div className="max-w-6xl mx-auto px-4 py-6 flex flex-wrap justify-between gap-2"><span>© 2026 Inkwell. Write something worth reading.</span><span>Built with React, Express and MongoDB</span></div>
       </footer>
     </div>
   );

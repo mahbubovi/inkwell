@@ -14,7 +14,8 @@ const users = [
   { name: 'Tomás Duarte', email: 'tomas@example.com' },
   { name: 'Samir Okafor', email: 'samir@example.com' },
 ];
-const PASSWORD = 'secret123';
+// On a public site, set SEED_PASSWORD to something private so the sample accounts cannot be guessed.
+const PASSWORD = process.env.SEED_PASSWORD || 'secret123';
 
 const posts = [
   ['priya@example.com', 'Designing APIs your future self will thank you for', 'Engineering', 1,
@@ -64,6 +65,6 @@ const posts = [
       author: byEmail[email]._id, views: 20 + ago * 37, createdAt: day(ago), updatedAt: day(ago) });
     added++;
   }
-  console.log(`Seeded ${added} posts. Sample logins use the password "${PASSWORD}" (e.g. priya@example.com).`);
+  console.log(`Seeded ${added} posts. Sample accounts: priya@, tomas@ and samir@example.com${process.env.SEED_PASSWORD ? ' (password from SEED_PASSWORD)' : ' (password: secret123)'}.`);
   await mongoose.disconnect();
 })().catch((e) => { console.error(e.message); process.exit(1); });
